@@ -11,6 +11,8 @@ namespace HitchinHackspace\SlackViewer;
 use Throwable;
 use ZipArchive, Exception;
 
+require_once __DIR__ . '/github-update.php';
+
 // Represents a single slack export (currently represented by one zip file)
 class SlackArchive {
    // A ZipArchive instance containing the export.
