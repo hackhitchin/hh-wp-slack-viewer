@@ -1,0 +1,50 @@
+ul.channel-messages {
+	padding: 0;
+	margin: 0;
+	list-style: none;
+	display: flex;
+	flex-direction: column;
+	gap: 1em;
+}
+
+ul.channel-messages li {
+	display: flex;
+	gap: 1em;
+}
+
+ul.channel-messages li > .avatar {
+	flex: 0 0 48px;
+}
+
+ul.channel-messages li > .data {
+	display: flex;
+	flex: 1 1 auto;
+	flex-direction: column;
+	gap: 1em;
+}
+
+.channel-messages .meta {
+	text-align: right;
+	font-size: smaller;
+}
+
+.channel-messages .meta .user-display-name {
+	font-weight: bold;
+}
+
+.channel-messages .meta .time {
+	color: #ccc;
+}
+
+ul.channel-list {
+	padding: 0;
+	margin: 0;
+	list-style: none;
+	display: flex;
+	flex-direction: column;
+	gap: 1em;
+}
+
+ul.channel-list li {
+	font-weight: bold;
+}
