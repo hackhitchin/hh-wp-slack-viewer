@@ -2,16 +2,16 @@
 
 /**
  * Plugin Name: Slack Archive Viewer
- * Version: 0.1
+ * Description: Display the contents of a JSON-formatted Slack archive.
+ * Version: 0.2
  * Author: Mark Thompson
+ * Update URI: https://github.com/hackhitchin/hh-wp-slack-viewer
  */
 
 namespace HitchinHackspace\SlackViewer;
 
 use Throwable;
 use ZipArchive, Exception;
-
-require_once __DIR__ . '/github-update.php';
 
 // Represents a single slack export (currently represented by one zip file)
 class SlackArchive {

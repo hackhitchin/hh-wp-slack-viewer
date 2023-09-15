@@ -20,7 +20,7 @@
                 "--exclude", ".vscode/",
                 "--exclude", "vendor",
                 "-p", "--chmod=Dug=rwx,Fug=rw,Do=rx,Fo=r",
-                "./hh-wp-slack-viewer",
+                ".",
                 "${config:deploy.target}"
             ],
             "group": {
