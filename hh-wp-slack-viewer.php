@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Slack Archive Viewer
  * Description: Display the contents of a JSON-formatted Slack archive.
- * Version: 0.2
+ * Version: 0.3
  * Author: Mark Thompson
  * Update URI: https://github.com/hackhitchin/hh-wp-slack-viewer
  */
@@ -12,6 +12,18 @@ namespace HitchinHackspace\SlackViewer;
 
 use Throwable;
 use ZipArchive, Exception;
+
+// Couple of PHP8 utility backports
+
+// Does the string $a start with $b?
+function starts_with($a, $b) {
+   return substr($a, 0, strlen($b)) == $b;
+}
+
+// Does the string $a end with $b?
+function ends_with($a, $b) {
+   return substr($a, -strlen($b)) == $b;
+}
 
 // Represents a single slack export (currently represented by one zip file)
 class SlackArchive {
@@ -46,7 +58,29 @@ class SlackArchive {
    // Get the list of channels contained within this archive.
    function getChannelList() {
       $channels = $this->getJSON('channels.json');
-      return array_map(function ($channel) { return new SlackChannel($this, $channel['name']); }, $channels);
+      foreach ($channels as $channelObject) 
+         yield new SlackChannel($this, $channelObject);
+   }
+
+   // Get the set of 'archived' channels.
+   function getArchivedChannels() {
+      foreach ($this->getChannelList() as $channel)
+         if ($channel->isArchived())
+            yield $channel;
+   }
+
+   // Get the set of (non-archived) 'general' channels.
+   function getGeneralChannels() {
+      foreach ($this->getChannelList() as $channel)
+         if (!$channel->isArchived() && $channel->isGeneral())
+            yield $channel;
+   }
+
+   // Get the set of non-archived, non-general channels.
+   function getStandardChannels() {
+      foreach ($this->getChannelList() as $channel)
+         if (!$channel->isArchived() && !$channel->isGeneral())
+            yield $channel;
    }
 
    // Get the specific channel named, or 'null' if it's not present.
@@ -174,19 +208,23 @@ class SlackUser {
 class SlackChannel {
    // A reference to the containing SlackArchive.
    private $archive;
-   // The name of this channel.
-   private $name;
+   // The backing JSON object.
+   public $obj;
 
-   function __construct($archive, $name) {
+   function __construct($archive, $obj) {
       $this->archive = $archive;
-      $this->name = $name;
+      $this->obj = $obj;
    }
 
-   function getName() { return $this->name; }
+   function getName() { return $this->obj['name']; }
+   function getTopic() { return $this->obj['topic']['value']; }
+   function getPurpose() { return $this->obj['purpose']['value']; }
+   function isArchived() { return $this->obj['is_archived']; }
+   function isGeneral() { return $this->obj['is_general']; }
 
    // Get a list of all the files in the archive relating to the message content of this channel.
    function getFiles() {
-      $prefix = "{$this->name}/";
+      $prefix = "{$this->getName()}/";
 
       foreach ($this->archive->getFileList() as $file)
          if (starts_with($file, $prefix) && ends_with($file, '.json'))
@@ -202,16 +240,6 @@ class SlackChannel {
 
       return $content;
    }
-}
-
-// Does the string $a start with $b?
-function starts_with($a, $b) {
-   return substr($a, 0, strlen($b)) == $b;
-}
-
-// Does the string $a end with $b?
-function ends_with($a, $b) {
-   return substr($a, -strlen($b)) == $b;
 }
 
 // Render the content of a file in templates/, optionally bringing additional variables into scope.

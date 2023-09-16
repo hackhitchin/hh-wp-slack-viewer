@@ -45,6 +45,68 @@ ul.channel-list {
 	gap: 1em;
 }
 
-ul.channel-list li {
-	font-weight: bold;
+.channel > a {
+    display: flex;
+    gap: 1em;
+}
+
+.channel > a, .channel > a:hover {
+    text-decoration: none;
+}
+
+.channel > a > .channel-logo::before {
+    content: '#';
+    font-size: 2em;
+    font-weight: bold;
+}
+
+.channel > a > .channel-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.channel-info .name {
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.channel-info .current-topic {
+    display: none;
+}
+
+.channel > a:hover .channel-info .name {
+    text-decoration: underline;
+}
+
+.channel-groups {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.channel-groups > li {
+    font-size: inherit;
+}
+
+.channel-groups > li > h3 {
+	font-size: 2em;
+	color: #888;
+	font-style: italic;
+}
+
+.channel-groups > li > ul {
+    padding-left: 1em;
+}
+
+.channel-groups > li.general {
+    padding-bottom: 5em;
+}
+
+.channel-groups > li.general > h3, .channel-groups > li.other > h3 {
+    display: none;
+}
+
+.channel-groups > li.archived > ul > li  .name::after {
+    content: ' (Archived)';
+    color: #ddd;
 }
