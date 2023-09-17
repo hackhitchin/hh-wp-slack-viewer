@@ -2,19 +2,49 @@
 
 namespace HitchinHackspace\SlackViewer;
 
-$content = $channel->getContent();
+$messageCount = $channel->getMessageCount();
 
-$content = array_values(array_filter($content, function ($message) { return ($message['ts'] ?? 0) != 0; }));
+$pageSize = 100;
 
-usort($content, function($a, $b) {
-    return $a['ts'] - $b['ts'];
-});
+$first = $page * $pageSize;
+$last = min($first + $pageSize, $messageCount);
+
+$messages = $channel->getContent($page * $pageSize, $pageSize);
+
+$pageLink = function($page) use ($channel) {
+    if ($page === null)
+        return null;
+
+    return "?path={$channel->getName()}/$page";
+};
+
+$renderNav = function() use ($channel, $first, $last, $pageSize, $pageLink) {
+    $prevPage = ($first > 0) ? ($first - $pageSize) / $pageSize : null;
+    $nextPage = ($first + $pageSize < $channel->getMessageCount()) ? ($first + $pageSize) / $pageSize : null;
+
+    $prevPageLink = $pageLink($prevPage);
+    $nextPageLink = $pageLink($nextPage);
+
+    ?>
+    <nav class="pagenav">
+        <?php if ($prevPage !== null) { ?><a href="<?= $prevPageLink ?>">Previous</a><?php } ?>
+        <?php if ($nextPage !== null) { ?><a href="<?= $nextPageLink ?>">Next</a><?php } ?>
+    </nav>
+    <?php
+}
+
 ?>
 
 <h2><a href="?path=">Slack Archives</a> > #<?= htmlspecialchars($channel->getName()) ?></h2>
+<h3>Messages <?= $first + 1 ?> to <?= $last ?> of <?= $messageCount ?></h3>
+
+<?php $renderNav(); ?>
+
 <ul class="channel-messages">
     <?php 
-        foreach ($content as $message) { 
+        foreach ($messages as $message) { 
+            $message = $message->getData();
+
             $user = $message['user'] ?? null;
             if ($user)
                 $user = $archive->getUser($user);
@@ -40,3 +70,5 @@ usort($content, function($a, $b) {
         </li>
     <?php } ?>
 </ul>
+
+<?php $renderNav(); ?>

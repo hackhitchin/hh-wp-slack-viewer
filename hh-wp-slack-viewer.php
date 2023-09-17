@@ -10,8 +10,10 @@
 
 namespace HitchinHackspace\SlackViewer;
 
-use Throwable;
-use ZipArchive, Exception;
+require_once __DIR__ . '/transient-cache.php';
+require_once __DIR__ . '/model.php';
+
+use Throwable, Exception;
 
 // Couple of PHP8 utility backports
 
@@ -23,223 +25,6 @@ function starts_with($a, $b) {
 // Does the string $a end with $b?
 function ends_with($a, $b) {
    return substr($a, -strlen($b)) == $b;
-}
-
-// Represents a single slack export (currently represented by one zip file)
-class SlackArchive {
-   // A ZipArchive instance containing the export.
-   private $archive;
-
-   // Slack user cache.
-   private $users = null;
-
-   // Construct an archive, given an ID of an item in the media library.
-   function __construct($archive_id) {
-      $this->archive = new ZipArchive();
-      if ($this->archive->open(get_attached_file($archive_id)) !== true)
-         throw new Exception('There was a problem opening the Slack archive file.');
-   }
-
-   // Get a list of the files contained within this archive.
-   function getFileList() {
-      for ($i = 0; $i < count($this->archive); ++$i)
-         yield $this->archive->getNameIndex($i);
-   }
-
-   // Get the contents of a member of the archive, decoded as JSON.
-   function getJSON($path) {
-      $content = $this->archive->getFromName($path);
-      if ($content === false)
-         throw new Exception("The Slack archive does not contain the requested file: $path");
-   
-      return json_decode($content, true, 128, JSON_THROW_ON_ERROR);
-   }
-
-   // Get the list of channels contained within this archive.
-   function getChannelList() {
-      $channels = $this->getJSON('channels.json');
-      foreach ($channels as $channelObject) 
-         yield new SlackChannel($this, $channelObject);
-   }
-
-   // Get the set of 'archived' channels.
-   function getArchivedChannels() {
-      foreach ($this->getChannelList() as $channel)
-         if ($channel->isArchived())
-            yield $channel;
-   }
-
-   // Get the set of (non-archived) 'general' channels.
-   function getGeneralChannels() {
-      foreach ($this->getChannelList() as $channel)
-         if (!$channel->isArchived() && $channel->isGeneral())
-            yield $channel;
-   }
-
-   // Get the set of non-archived, non-general channels.
-   function getStandardChannels() {
-      foreach ($this->getChannelList() as $channel)
-         if (!$channel->isArchived() && !$channel->isGeneral())
-            yield $channel;
-   }
-
-   // Get the specific channel named, or 'null' if it's not present.
-   function getChannel($name) {
-      $channels = $this->getChannelList();
-      foreach ($channels as $channel)
-         if ($channel->getName() == $name)
-            return $channel;
-
-      return null;
-   }
-
-   // Get all users in this archive.
-   function getUsers() {
-      if (!$this->users) {
-         $users = $this->getJSON('users.json');
-         $extract = function($users) {
-            foreach ($users as $user) {
-               $user = new SlackUser($this, $user);
-               yield $user->getID() => $user;
-            }
-         };
-         $this->users = iterator_to_array($extract($users));
-      }
-      return $this->users;
-   }
-
-   // Get a user by their ID.
-   function getUser($id) {
-      return $this->getUsers()[$id] ?? null;
-   }
-}
-
-// Represents a Slack user.
-class SlackUser {
-   // A reference to the containing SlackArchive.
-   private $archive;
-   // The backing JSON object.
-   public $obj;
-   // Avatar image URLs
-   private $avatarURLs = null;
-
-   function __construct($archive, $obj) {
-      $this->archive = $archive;
-      $this->obj = $obj;
-   }
-
-   private static function getValueInner($obj, $key) {
-      if (!$obj)
-         return null;
-
-      if (is_array($key))
-         return array_map(function ($key) use ($obj) { return self::getValueInner($obj, $key); }, $key);
-      
-      return $obj[$key] ?? null;
-   }
-
-   private function getValue($key) { 
-      return self::getValueInner($this->obj, $key);   
-   }
-
-   function getID() {
-      return $this->getValue('id');
-   }
-
-   function getProfile($key = null) {
-      $profile = $this->getValue('profile');
-      return self::getValueInner($profile, $key);
-   }
-
-   function getDisplayName() {
-      return $this->getProfile('display_name');
-   }
-
-   private static function getAvatarKeys() {
-      return [
-         '1024' => 'image_1024',
-         '512' => 'image_512',
-         '192' => 'image_192',
-         '72' => 'image_72',
-         '48' => 'image_48',
-         '32' => 'image_32',
-         '24' => 'image_24'
-      ];
-   }
-
-   function getAvatarURLs() {
-      if ($this->avatarURLs === null) {
-         $fn = function() {
-            foreach (self::getAvatarKeys() as $size => $key) {
-               $value = $this->getProfile($key);
-               if (!$value)
-                  continue;
-               yield $size => $value;
-            }
-         };
-
-         $this->avatarURLs = iterator_to_array($fn());
-      }
-      
-      return $this->avatarURLs;
-      
-   }
-
-   function getAvatarURL($atleast = null) {
-      $avatarURLs = $this->getAvatarURLs();
-
-      $best = null;
-
-      foreach ($avatarURLs as $size => $url) {
-         if ($atleast === null)
-            return $url;
-
-         if ($size < $atleast)
-            return $best;
-
-         $best = $url;
-      }
-
-      return null;
-   }
-}
-
-// Represents a single Slack channel.
-class SlackChannel {
-   // A reference to the containing SlackArchive.
-   private $archive;
-   // The backing JSON object.
-   public $obj;
-
-   function __construct($archive, $obj) {
-      $this->archive = $archive;
-      $this->obj = $obj;
-   }
-
-   function getName() { return $this->obj['name']; }
-   function getTopic() { return $this->obj['topic']['value']; }
-   function getPurpose() { return $this->obj['purpose']['value']; }
-   function isArchived() { return $this->obj['is_archived']; }
-   function isGeneral() { return $this->obj['is_general']; }
-
-   // Get a list of all the files in the archive relating to the message content of this channel.
-   function getFiles() {
-      $prefix = "{$this->getName()}/";
-
-      foreach ($this->archive->getFileList() as $file)
-         if (starts_with($file, $prefix) && ends_with($file, '.json'))
-            yield $file;
-   }
-
-   // Get all the messages from this channel.
-   function getContent() {
-      $content = [];
-
-      foreach ($this->getFiles() as $file)
-         $content = array_merge($content, $this->archive->getJSON($file));
-
-      return $content;
-   }
 }
 
 // Render the content of a file in templates/, optionally bringing additional variables into scope.
@@ -285,20 +70,27 @@ add_shortcode('hh_slack_archives', function($attrs) {
          $archive = get_slack_archive();
 
          // Work out which page the user wants.
-         $channel = get_query_var('path') ?: '';
-
+         $path = array_values(array_filter(explode('/', get_query_var('path') ?: '')));
+         
          // Is it a request for the channel list?
-         if (!$channel) {
+         if (!$path) {
             $content = render_template('channel-list.php', ['archive' => $archive]);
          }
          else {
+            $channel = $path[0];
+
             // Does the channel exist?
             $channel = $archive->getChannel($channel);
 
             if (!$channel)
                throw new Exception('No such channel.');
 
-            $content = render_template('channel-content.php', ['archive' => $archive, 'channel' => $channel]);
+            $page = 0;
+            
+            if (count($path) > 1)
+               $page = intval($path[1]) ?: 0;
+            
+            $content = render_template('channel-content.php', ['archive' => $archive, 'channel' => $channel, 'page' => $page]);
          }
       }
       catch (Throwable $e) {
@@ -313,6 +105,8 @@ add_shortcode('hh_slack_archives', function($attrs) {
       <?php
    }
    finally {
+      $archive->getCache()->persist();
+
       return ob_get_clean();
    }
 });
