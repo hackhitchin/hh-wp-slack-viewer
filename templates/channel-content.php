@@ -2,47 +2,62 @@
 
 namespace HitchinHackspace\SlackViewer;
 
-$messageCount = $channel->getMessageCount();
+class ChannelRenderer {
+    public $channel;
+    public $page, $pageSize;
+    public $first, $last;
+    public $messageCount;
 
-$pageSize = 100;
+    function __construct($channel, $page, $pageSize) {
+        $this->channel = $channel;
+        $this->page = $page;
+        $this->pageSize = $pageSize;
 
-$first = $page * $pageSize;
-$last = min($first + $pageSize, $messageCount);
+        $this->messageCount = $this->channel->getMessageCount();
 
-$messages = $channel->getContent($page * $pageSize, $pageSize);
+        $this->first = $this->page * $this->pageSize;
+        $this->last = min($this->first + $this->pageSize, $this->messageCount);
+    }
 
-$pageLink = function($page) use ($channel) {
-    if ($page === null)
-        return null;
+    function getMessages() {
+        return $this->channel->getContent($this->page * $this->pageSize, $this->pageSize);
+    }
+    
+    function getPageLink($page) {
+        if ($page === null)
+            return null;
 
-    return "?path={$channel->getName()}/$page";
-};
+        return "?path={$this->channel->getName()}/$page";
+    }
 
-$renderNav = function() use ($channel, $first, $last, $pageSize, $pageLink) {
-    $prevPage = ($first > 0) ? ($first - $pageSize) / $pageSize : null;
-    $nextPage = ($first + $pageSize < $channel->getMessageCount()) ? ($first + $pageSize) / $pageSize : null;
+    function renderNav() {
+        $prevPage = ($this->first > 0) ? ($this->first - $this->pageSize) / $this->pageSize : null;
+        $nextPage = ($this->first + $this->pageSize < $this->messageCount) ? ($this->first + $this->pageSize) / $this->pageSize : null;
 
-    $prevPageLink = $pageLink($prevPage);
-    $nextPageLink = $pageLink($nextPage);
+        $prevPageLink = $this->getPageLink($prevPage);
+        $nextPageLink = $this->getPageLink($nextPage);
 
-    ?>
-    <nav class="pagenav">
-        <?php if ($prevPage !== null) { ?><a href="<?= $prevPageLink ?>">Previous</a><?php } ?>
-        <?php if ($nextPage !== null) { ?><a href="<?= $nextPageLink ?>">Next</a><?php } ?>
-    </nav>
-    <?php
+        ?>
+        <nav class="pagenav">
+            <?php if ($prevPage !== null) { ?><a href="<?= $prevPageLink ?>">Previous</a><?php } ?>
+            <?php if ($nextPage !== null) { ?><a href="<?= $nextPageLink ?>">Next</a><?php } ?>
+        </nav>
+        <?php
+    }
 }
+
+$renderer = new ChannelRenderer($channel, $page, 100);
 
 ?>
 
-<h2><a href="?path=">Slack Archives</a> > #<?= htmlspecialchars($channel->getName()) ?></h2>
-<h3>Messages <?= $first + 1 ?> to <?= $last ?> of <?= $messageCount ?></h3>
+<h2><a href="?path=">Slack Archives</a> > #<?= htmlspecialchars($renderer->channel->getName()) ?></h2>
+<h3>Messages <?= $renderer->first + 1 ?> to <?= $renderer->last ?> of <?= $renderer->messageCount ?></h3>
 
-<?php $renderNav(); ?>
+<?php $renderer->renderNav(); ?>
 
 <ul class="channel-messages">
     <?php 
-        foreach ($messages as $message) { 
+        foreach ($renderer->getMessages() as $message) { 
             $message = $message->getData();
 
             $user = $message['user'] ?? null;
@@ -71,4 +86,4 @@ $renderNav = function() use ($channel, $first, $last, $pageSize, $pageLink) {
     <?php } ?>
 </ul>
 
-<?php $renderNav(); ?>
+<?php $renderer->renderNav(); ?>
