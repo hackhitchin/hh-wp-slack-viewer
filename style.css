@@ -117,3 +117,37 @@ ul.channel-list {
     content: ' (Archived)';
     color: #ddd;
 }
+
+.slack-archives .pagenav {
+    display: flex;
+    margin-bottom: 2em;
+}
+
+.slack-archives .pagenav ul {
+    flex: 1 1 auto;
+    display: flex;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.slack-archives .pagenav ul li {
+    flex: 1 1 auto;
+    border: 1px solid black;
+    padding: 0.5em;
+	text-align: center;
+}
+
+.slack-archives .pagenav ul li.current {
+    background: #ccc;
+    color: white;
+}
+
+.slack-archives .pagenav ul li:not(:first-child) {
+    border-left: none;
+}
+
+.slack-archives .pagenav ul li a {
+    text-decoration: none;
+    color: inherit;
+}

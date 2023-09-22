@@ -5,43 +5,99 @@ namespace HitchinHackspace\SlackViewer;
 class ChannelRenderer {
     public $channel;
     public $page, $pageSize;
-    public $first, $last;
     public $messageCount;
 
     function __construct($channel, $page, $pageSize) {
         $this->channel = $channel;
-        $this->page = $page;
+        $this->page = $page ?: 1;
         $this->pageSize = $pageSize;
 
         $this->messageCount = $this->channel->getMessageCount();
-
-        $this->first = $this->page * $this->pageSize;
-        $this->last = min($this->first + $this->pageSize, $this->messageCount);
     }
 
     function getMessages() {
-        return $this->channel->getContent($this->page * $this->pageSize, $this->pageSize);
+        return $this->channel->getContent($this->getFirstIndex(), $this->pageSize);
     }
-    
-    function getPageLink($page) {
-        if ($page === null)
-            return null;
 
-        return "?path={$this->channel->getName()}/$page";
+    function getFirstIndex() { return ($this->page - 1) * $this->pageSize; }
+    function getLastIndex() { return min($this->getFirstIndex() + $this->pageSize, $this->messageCount); }
+    function getPageCount() { return ceil($this->messageCount / $this->pageSize); }
+    function hasPrevPage() { return $this->page > 1; }
+    function hasNextPage() { return $this->page < $this->getPageCount(); }
+
+    function getPrevPage() { return $this->hasPrevPage() ? $this->page - 1 : null; }
+    function getNextPage() { return $this->hasNextPage() ? $this->page + 1 : null; }
+        
+    function getPageLink($page) { return "?path={$this->channel->getName()}/$page"; }
+
+    /*
+    function getPageName($page) {
+        if ($page == 1) 
+            return 'First';
+        if ($page == $this->getPageCount())
+            return 'Last';
+        if ($page == $this->page - 1)
+            return 'Previous';
+        if ($page == $this->page + 1)
+            return 'Next';
+
+        return $page;
+    }
+    */
+
+    function renderPageLink($page, $name) {
+        $class = ($page == $this->page) ? ' class="current"' : '';
+
+        ?>
+            <li<?= $class ?>><a href="<?= $this->getPageLink($page) ?>"<?= $class ?>><?= $name ?></a></li>
+        <?php
+        return true;
     }
 
     function renderNav() {
-        $prevPage = ($this->first > 0) ? ($this->first - $this->pageSize) / $this->pageSize : null;
-        $nextPage = ($this->first + $this->pageSize < $this->messageCount) ? ($this->first + $this->pageSize) / $this->pageSize : null;
+        // Which pages should we link to?
 
-        $prevPageLink = $this->getPageLink($prevPage);
-        $nextPageLink = $this->getPageLink($nextPage);
+        // How often should we add page links? It depends how many pages there are in total.
+        $skip = intval(round($this->getPageCount() / 50) * 5); // About every 10%, but make sure it's a multiple of 5.
+
+        $pages = array_merge(
+            // An overview of the entire range
+            range($this->page, -$skip, -$skip),
+            range($this->page, $this->getPageCount() + $skip, $skip),
+            // ... plus five pages back and forward from our current location.
+            range($this->page - 3, $this->page + 3),
+            // ... and the first and last page.
+            [1, $this->getPageCount()]
+        );
+
+        // Remove those that are out of range.
+        $pages = array_filter($pages, function ($page) { return $page > 1 && $page < $this->getPageCount(); });
+
+        // ... and duplicates
+        $pages = array_values(array_unique($pages));
+
+        // ... then make sure they're in order.
+        sort($pages, SORT_NUMERIC);
 
         ?>
-        <nav class="pagenav">
-            <?php if ($prevPage !== null) { ?><a href="<?= $prevPageLink ?>">Previous</a><?php } ?>
-            <?php if ($nextPage !== null) { ?><a href="<?= $nextPageLink ?>">Next</a><?php } ?>
-        </nav>
+            <nav class="pagenav">
+                <ul>
+                    <?php 
+                        if ($this->getPageCount() > 1)
+                            $this->renderPageLink(1, 'First');
+                        if ($this->page > 1)
+                            $this->renderPageLink($this->page - 1, 'Prev');
+
+                        foreach ($pages as $page)
+                            $this->renderPageLink($page, $page);
+
+                        if ($this->page < $this->getPageCount())
+                            $this->renderPageLink($this->page + 1, 'Next');
+                        if ($this->getPageCount() > 1)
+                            $this->renderPageLink($this->getPageCount(), 'Last');
+                    ?>
+                </ul>
+            </nav>
         <?php
     }
 }
@@ -51,7 +107,7 @@ $renderer = new ChannelRenderer($channel, $page, 100);
 ?>
 
 <h2><a href="?path=">Slack Archives</a> > #<?= htmlspecialchars($renderer->channel->getName()) ?></h2>
-<h3>Messages <?= $renderer->first + 1 ?> to <?= $renderer->last ?> of <?= $renderer->messageCount ?></h3>
+<h3>Messages <?= $renderer->getFirstIndex() + 1 ?> to <?= $renderer->getLastIndex() ?> of <?= $renderer->messageCount ?></h3>
 
 <?php $renderer->renderNav(); ?>
 

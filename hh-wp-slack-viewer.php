@@ -85,10 +85,10 @@ add_shortcode('hh_slack_archives', function($attrs) {
             if (!$channel)
                throw new Exception('No such channel.');
 
-            $page = 0;
+            $page = null;
             
             if (count($path) > 1)
-               $page = intval($path[1]) ?: 0;
+               $page = intval($path[1]) ?: null;
             
             $content = render_template('channel-content.php', ['archive' => $archive, 'channel' => $channel, 'page' => $page]);
          }

@@ -48,7 +48,9 @@ class TransientCache implements ArrayAccess {
     }
  
     private function load() {
-       $this->transient = get_transient($this->key) ?? [];
+       $this->transient = get_transient($this->key);
+       if (!is_array($this->transient))
+         $this->transient = [];
     }
  
     public function offsetExists(mixed $offset): bool { 
