@@ -48,8 +48,10 @@ class ChannelRenderer {
     function renderPageLink($page, $name) {
         $class = ($page == $this->page) ? ' class="current"' : '';
 
+        $timestamp = $this->channel->getApproximateTimestamp(($page - 1) * $this->pageSize);
+
         ?>
-            <li<?= $class ?>><a href="<?= $this->getPageLink($page) ?>"<?= $class ?>><?= $name ?></a></li>
+            <li title="<?= date('d/m/Y', $timestamp) ?>"<?= $class ?>><a href="<?= $this->getPageLink($page) ?>"<?= $class ?>><?= $name ?></a></li>
         <?php
         return true;
     }

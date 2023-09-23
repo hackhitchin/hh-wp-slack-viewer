@@ -120,7 +120,7 @@ ul.channel-list {
 
 .slack-archives .pagenav {
     display: flex;
-    margin-bottom: 2em;
+    margin: 2em 0;
 }
 
 .slack-archives .pagenav ul {

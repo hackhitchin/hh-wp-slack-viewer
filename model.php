@@ -265,6 +265,21 @@ class SlackArchive {
        return $count;
     }
  
+   // Guess at a rough date of a message, without parsing the full message file.
+   function getApproximateTimestamp($offset) {
+      foreach ($this->getFiles() as $file) {
+         // Does this file contain messages within the range?
+         $count = $file->getMessageCount();
+         if ($count > $offset)
+            return $file->getFirstMessageTimestamp();
+
+         // No. Skip it.
+         $offset -= $count;
+      }
+
+      return time();
+   }
+
     // Get a subset of messages from this channel, based on a first message index and count.
     function getContent($offset = 0, $limit = null) {
        foreach ($this->getFiles() as $file) {
