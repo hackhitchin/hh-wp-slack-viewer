@@ -96,7 +96,7 @@ add_shortcode('hh_slack_archives', function($attrs) {
             $channel = $path[0];
 
             // Does the channel exist?
-            $channel = $archive->getChannel($channel);
+            $channel = $archive->getChannelByName($channel);
 
             if (!$channel)
                throw new Exception('No such channel.');

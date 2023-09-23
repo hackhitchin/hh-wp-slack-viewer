@@ -2,6 +2,8 @@
 
 namespace HitchinHackspace\SlackViewer;
 
+use Exception;
+
 class ChannelRenderer {
     public $channel;
     public $page, $pageSize;
@@ -143,42 +145,193 @@ class ChannelRenderer {
         return null;
     }
 
+    const ELEMENT_HANDLERS = [
+        'rich_text_section' => 'renderRichTextElement',
+        'text' => 'renderTextElement',
+        'user' => 'renderUserElement',
+        'link' => 'renderLinkElement',
+        'emoji' => 'renderEmojiElement',
+        'channel' => 'renderChannelElement'
+    ];
+
+    const BLOCK_HANDLERS = [
+        'rich_text' => 'renderRichTextBlock'
+    ];
+
+    const MESSAGE_HANDLERS = [
+        'message' => 'renderBlocks'
+    ];
+
+    const SUBTYPE_HANDLERS = [
+        'channel_join' => 'renderChannelJoin'
+    ];
+
+    function handle($type, $handlers, $subtype, ... $args) {
+        $handler = $handlers[$subtype] ?? null;
+
+        if (!$handler)
+            throw new Exception("Unrecognised $type type: '$subtype'");
+
+        $this->$handler(... $args);
+    }
+
+    function renderTextElement($message, $element) {
+        ?>
+        <?= htmlspecialchars($element['text']) ?>
+        <?php
+    }
+
+    function renderRichTextElement($message, $element) {
+        foreach ($element['elements'] as $child)
+            $this->renderElement($message, $child);
+    }
+
+    function renderUserElement($message, $element) {
+        $user = $this->channel->archive->getUser($element['user_id']);
+
+        if ($user) {
+            ?>
+                <span class="user">@<?= $user->getName() ?></span>
+            <?php
+        }
+        else {
+            ?>
+                <span class="user unknown">@unknown</span>
+            <?php
+        }
+    }
+
+    function renderLinkElement($message, $element) {
+        $url = $element['url'];
+        $text = $element['text'] ?? $url;
+
+        ?>
+            <a class="message-link" href="<?= $url ?>" target="_blank"><?= $text ?></a>
+        <?php
+    }
+
+    function renderEmojiElement($message, $element) {
+        ?>
+            <span class="emoji">&#x<?= $element['unicode'] ?>;</span>
+        <?php 
+    }
+
+    function renderChannelElement($message, $element) {
+        $channel = $this->channel->archive->getChannelByID($element['channel_id']);
+
+        if ($channel) {
+            ?>
+                <a class="channel-link" href="?path=<?= esc_attr($channel->getName()) ?>">#<?= htmlspecialchars($channel->getName()) ?></a>
+            <?php
+        }
+        else {
+            ?>
+                <a class="channel-link unknown">#unknown</a>
+            <?php
+        }
+    }
+
+    function renderElement($message, $element) {
+        $this->handle('element', self::ELEMENT_HANDLERS, $element['type'], $message, $element);
+    }
+
+    function renderRichTextBlock($message, $block) {
+        foreach ($block['elements'] as $element)
+            $this->renderElement($message, $element);
+    }
+
+    function renderBlock($message, $block) {
+        $this->handle('block', self::BLOCK_HANDLERS, $block['type'], $message, $block);
+    }
+
+    function renderChannelJoin($message) {
+        $user = $this->channel->archive->getUser($message['user']);
+
+        if ($user) {
+            ?>
+                <span class="user">@<?= $user->getName() ?></span> has joined the channel.
+            <?php
+        }
+        else {
+            ?>
+                <span class="user">@unknown</span> has joined the channel.
+            <?php
+        }
+    }
+
+    function renderBlocks($message) {
+        $subtype = $message['subtype'] ?? null;
+
+        if ($subtype) {
+            $this->handle('message subtype', self::SUBTYPE_HANDLERS, $subtype, $message);
+            return;
+        }
+
+        foreach ($message['blocks'] as $block)
+            $this->renderBlock($message, $block);
+    }
+
+    function renderContent($message) {
+        ob_start();
+
+        try {
+            $this->handle('message', self::MESSAGE_HANDLERS, $message['type'], $message);
+            ob_flush();
+        }
+        catch (Exception $e) {
+            error_log($e);
+            ob_clean();
+
+            ?>
+                <div class="content-decode-error" title="<?= $e->getMessage(); ?>">
+                    <?= htmlspecialchars($message['text']) ?>
+                </div>
+            <?php
+
+            ob_flush();
+        }
+        finally {
+            ob_end_clean();
+        }
+    }
+
     function renderMessage($message) {
-        $files = $message['files'] ?: [];
+        $files = $message['files'] ?? [];
         ?>
         <div class="message">
-            <?= $message['text']; ?>
-            <?php if ($files) { ?>
-                <ul class="files">
-                    <?php foreach ($files as $file) { 
-                        if ($file['mode'] == 'hidden_by_limit') {
-                            ?>
-                                <li class="hidden_by_limit">
-                                    Due to Slack limits, this attachment can't be shown.
-                                </li>
-                            <?php
+            <?php
+                $this->renderContent($message);
+                if ($files) { ?>
+                    <ul class="files">
+                        <?php foreach ($files as $file) { 
+                            if ($file['mode'] == 'hidden_by_limit') {
+                                ?>
+                                    <li class="hidden_by_limit">
+                                        Due to Slack limits, this attachment can't be shown.
+                                    </li>
+                                <?php
+                            }
+                            else {
+                                ?>
+                                    <li>
+                                        <a target="_blank" href="<?= $file['url_private'] ?>">
+                                            <?php
+                                                $preview = $this->getFilePreview($file, 160);
+                                                if ($preview) {
+                                                    ?><img class="file-preview" src="<?= $preview ?>"><?php
+                                                }
+                                                else {
+                                                    ?><?= $file['name'] ?><?php
+                                                }
+                                            ?>
+                                        </a>
+                                    </li>
+                                <?php
+                            }
                         }
-                        else {
-                            ?>
-                                <li>
-                                    <a target="_blank" href="<?= $file['url_private'] ?>">
-                                        <?php
-                                            $preview = $this->getFilePreview($file, 160);
-                                            if ($preview) {
-                                                ?><img class="file-preview" src="<?= $preview ?>"><?php
-                                            }
-                                            else {
-                                                ?><?= $file['name'] ?><?php
-                                            }
-                                        ?>
-                                    </a>
-                                </li>
-                            <?php
-                        }
-                    }
-                    ?>
-                </ul>
-            <?php } ?>
+                        ?>
+                    </ul>
+                <?php } ?>
             </div>
         <?php
     }

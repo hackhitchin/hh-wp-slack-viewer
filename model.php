@@ -78,7 +78,7 @@ class SlackArchive {
     }
  
     // Get the specific channel named, or 'null' if it's not present.
-    function getChannel($name) {
+    function getChannelByName($name) {
        $channels = $this->getChannelList();
        foreach ($channels as $channel)
           if ($channel->getName() == $name)
@@ -86,6 +86,15 @@ class SlackArchive {
  
        return null;
     }
+
+    function getChannelByID($id) {
+      $channels = $this->getChannelList();
+      foreach ($channels as $channel)
+         if ($channel->getID() == $id)
+            return $channel;
+
+      return null;
+   }
  
     // Get all users in this archive.
     function getUsers() {
@@ -140,6 +149,10 @@ class SlackArchive {
        return $this->getValue('id');
     }
  
+    function getName() {
+      return self::getValue('name');
+    }
+
     function getProfile($key = null) {
        $profile = $this->getValue('profile');
        return self::getValueInner($profile, $key);
