@@ -191,12 +191,12 @@ class ChannelRenderer {
 
         if ($user) {
             ?>
-                <span class="user">@<?= $user->getName() ?></span>
+                <span class="user"><?= $user->getName() ?></span>
             <?php
         }
         else {
             ?>
-                <span class="user unknown">@unknown</span>
+                <span class="user unknown">unknown</span>
             <?php
         }
     }
@@ -221,12 +221,12 @@ class ChannelRenderer {
 
         if ($channel) {
             ?>
-                <a class="channel-link" href="?path=<?= esc_attr($channel->getName()) ?>">#<?= htmlspecialchars($channel->getName()) ?></a>
+                <a class="channel-link" href="?path=<?= esc_attr($channel->getName()) ?>"><?= htmlspecialchars($channel->getName()) ?></a>
             <?php
         }
         else {
             ?>
-                <a class="channel-link unknown">#unknown</a>
+                <a class="channel-link unknown">unknown</a>
             <?php
         }
     }

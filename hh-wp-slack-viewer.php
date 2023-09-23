@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Slack Archive Viewer
  * Description: Display the contents of a JSON-formatted Slack archive.
- * Version: 0.3
+ * Version: 0.4
  * Author: Mark Thompson
  * Update URI: https://github.com/hackhitchin/hh-wp-slack-viewer
  */
