@@ -133,9 +133,9 @@ ul.channel-list {
 
 .slack-archives .pagenav ul li {
     flex: 1 1 auto;
-    border: 1px solid black;
-    padding: 0.5em;
+    border: 1px solid black;    
 	text-align: center;
+	display: flex;
 }
 
 .slack-archives .pagenav ul li.current {
@@ -150,4 +150,6 @@ ul.channel-list {
 .slack-archives .pagenav ul li a {
     text-decoration: none;
     color: inherit;
+	flex: 1 1 auto;
+	padding: 0.5em;
 }

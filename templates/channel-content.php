@@ -60,7 +60,15 @@ class ChannelRenderer {
         // Which pages should we link to?
 
         // How often should we add page links? It depends how many pages there are in total.
-        $skip = intval(round($this->getPageCount() / 50) * 5); // About every 10%, but make sure it's a multiple of 5.
+        $skip = intval($this->getPageCount() / 10);
+
+        // If it's more than five, make sure it's a multiple of five.
+        if ($skip > 5)
+            $skip -= ($skip % 5);
+        
+        // Make sure it's not zero.
+        if ($skip < 1)
+            $skip = 1;
 
         $pages = array_merge(
             // An overview of the entire range
