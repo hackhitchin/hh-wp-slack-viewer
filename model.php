@@ -180,21 +180,7 @@ class SlackArchive {
     }
  
     function getAvatarURL($atleast = null) {
-       $avatarURLs = $this->getAvatarURLs();
- 
-       $best = null;
- 
-       foreach ($avatarURLs as $size => $url) {
-          if ($atleast === null)
-             return $url;
- 
-          if ($size < $atleast)
-             return $best;
- 
-          $best = $url;
-       }
- 
-       return null;
+       return getBestImageURL($this->getAvatarURLs(), $atleast);
     }
  }
  

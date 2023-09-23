@@ -110,6 +110,78 @@ class ChannelRenderer {
             </nav>
         <?php
     }
+
+    function getFilePreview($file, $atleast = null) {
+        static $thumbKeys = [
+            '1024' => 'thumb_1024',
+            '960' => 'thumb_960',
+            '800' => 'thumb_800',
+            '720' => 'thumb_720',
+            '480' => 'thumb_480',
+            '360' => 'thumb_360',
+            '160' => 'thumb_160',
+            '80' => 'thumb_80',
+            '64' => 'thumb_64'
+        ];
+
+        $best = null;
+
+        foreach ($thumbKeys as $size => $key) {
+            $url = $file[$key] ?? null;
+            if (!$url)
+                continue;
+
+            if ($atleast === null)
+                return $url;
+
+            if ($size < $atleast)
+                return $best;
+
+            $best = $url;
+        }
+
+        return null;
+    }
+
+    function renderMessage($message) {
+        $files = $message['files'] ?: [];
+        ?>
+        <div class="message">
+            <?= $message['text']; ?>
+            <?php if ($files) { ?>
+                <ul class="files">
+                    <?php foreach ($files as $file) { 
+                        if ($file['mode'] == 'hidden_by_limit') {
+                            ?>
+                                <li class="hidden_by_limit">
+                                    Due to Slack limits, this attachment can't be shown.
+                                </li>
+                            <?php
+                        }
+                        else {
+                            ?>
+                                <li>
+                                    <a target="_blank" href="<?= $file['url_private'] ?>">
+                                        <?php
+                                            $preview = $this->getFilePreview($file, 160);
+                                            if ($preview) {
+                                                ?><img class="file-preview" src="<?= $preview ?>"><?php
+                                            }
+                                            else {
+                                                ?><?= $file['name'] ?><?php
+                                            }
+                                        ?>
+                                    </a>
+                                </li>
+                            <?php
+                        }
+                    }
+                    ?>
+                </ul>
+            <?php } ?>
+            </div>
+        <?php
+    }
 }
 
 $renderer = new ChannelRenderer($channel, $page, 100);
@@ -139,9 +211,7 @@ $renderer = new ChannelRenderer($channel, $page, 100);
                 <?php if ($avatarURL) { ?><img class="avatar" src="<?= $avatarURL ?>"><?php } ?>
             </div>
             <div class="data">
-                <span class="message">
-                    <?= $message['text']; ?>
-                </span>
+                <?php $renderer->renderMessage($message); ?>
                 <div class="meta">
                     <span class="user-display-name"><?= $user ? $user->getDisplayName() : 'Unknown' ?></span>
                     @

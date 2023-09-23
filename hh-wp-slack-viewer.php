@@ -58,6 +58,22 @@ function get_slack_archive() {
    return $slack_archive;
 }
 
+function getBestImageURL($urls, $atleast = null) {
+   $best = null;
+
+   foreach ($urls as $size => $url) {
+      if ($atleast === null)
+         return $url;
+
+      if ($size < $atleast)
+         return $best;
+
+      $best = $url;
+   }
+
+   return null;
+}
+
 // Render the contents of the slack archive, based on the path the user has selected (in the query)
 add_shortcode('hh_slack_archives', function($attrs) {
    add_filter('jetpack_photon_skip_image', function() { return true; });

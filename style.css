@@ -30,6 +30,20 @@ ul.channel-messages li > .data {
 	gap: 1em;
 }
 
+ul.channel-messages li .files {
+	margin-top: 1em;
+}
+
+ul.channel-messages li .files li {
+	font-size: smaller;
+	display: inline-flex;
+}
+
+ul.channel-messages li .files li.hidden_by_limit {
+	display: list-item;
+	font-style: italic;
+}
+
 .channel-messages .meta {
 	text-align: right;
 	font-size: smaller;
