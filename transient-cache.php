@@ -53,15 +53,15 @@ class TransientCache implements ArrayAccess {
          $this->transient = [];
     }
  
-    public function offsetExists(mixed $offset): bool { 
+    public function offsetExists($offset) { 
        return array_key_exists($offset, $this->transient);
     }
  
-    public function offsetGet(mixed $offset): mixed { 
+    public function offsetGet($offset) { 
        return $this->transient[$offset];
     }
  
-    public function offsetSet(mixed $offset, mixed $value): void {
+    public function offsetSet($offset, $value) {
        $this->transient[$offset] = $value;
     }
  
