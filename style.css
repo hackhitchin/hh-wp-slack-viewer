@@ -4,12 +4,18 @@ ul.channel-messages {
 	list-style: none;
 	display: flex;
 	flex-direction: column;
-	gap: 1em;
+	gap: 0;
+	overflow-wrap: anywhere;
 }
 
 ul.channel-messages li {
 	display: flex;
 	gap: 1em;
+	padding: 0.5em;
+}
+
+ul.channel-messages li:target {
+	background: lemonchiffon;
 }
 
 ul.channel-messages li > .avatar {
@@ -187,5 +193,51 @@ ul.channel-list {
 }
 
 .slack-message .data .channel-link::before {
-	content: '@';
+	content: '#';
+}
+
+.slack-archives .search-highlight {
+	color: white;
+	background: black;
+}
+
+html {
+	scroll-padding-top: 40%;
+}
+
+.slack-archives header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.slack-archives h2 {
+    margin: 0;
+}
+
+.slack-archives .slack-search {
+    display: flex;
+    border: 1px solid #ccc;
+    border-radius: 50px;
+    overflow: hidden;
+    padding-left: 1em;
+}
+
+.slack-archives .slack-search:focus-within {
+    border-color: black;
+}
+
+.slack-archives .slack-search input {
+    border: none;
+    outline: none;
+}
+
+.slack-archives .slack-search button {
+    background: none;
+	color: #ccc;
+}
+
+.slack-archives .slack-search:focus-within button, .slack-archives .slack-search button:hover {
+    color: black;
 }

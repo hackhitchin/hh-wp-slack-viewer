@@ -40,7 +40,6 @@ function render_channel_list($channels, $name, $classes = []) {
 
 ?>
 
-<h2><a href="?path=">Slack Archives</a> > All Channels</h2>
 <ul class="channel-groups">
     <?php render_channel_list($archive->getGeneralChannels(), 'General', 'general'); ?>
     <?php render_channel_list($archive->getStandardChannels(), 'Other Channels', 'other'); ?>
