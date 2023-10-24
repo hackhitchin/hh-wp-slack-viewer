@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Slack Archive Viewer
  * Description: Display the contents of a JSON-formatted Slack archive.
- * Version: 0.5.1
+ * Version: 0.5.3
  * Author: Mark Thompson
  * Update URI: https://github.com/hackhitchin/hh-wp-slack-viewer
  */
@@ -152,7 +152,7 @@ add_shortcode('hh_slack_archives', function($attrs) {
             $path = [$path];
 
          // Join all path components, even if they were in separate query variables
-         $path = array_merge(...array_map(fn ($value) => explode('/', $value), $path));
+         $path = array_merge(...array_map(function ($value) { return explode('/', $value); }, $path));
 
          // Filter any blank ones.
          $path = array_values(array_filter($path));

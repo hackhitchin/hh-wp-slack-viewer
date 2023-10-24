@@ -69,7 +69,7 @@ class TransientCache implements ArrayAccess {
        set_transient($this->key, $this->transient, 3600);
     }
  
-    public function offsetUnset(mixed $offset): void { 
+    public function offsetUnset($offset) { 
        unset($this->transient[$offset]);
     }
 }
@@ -87,7 +87,7 @@ class SubCache implements ArrayAccess {
        $this->key = $key;
     }
  
-    public function offsetExists(mixed $offset): bool { 
+    public function offsetExists($offset) { 
        if (!$this->backing->offsetExists($this->key))
           return false;
  
@@ -95,7 +95,7 @@ class SubCache implements ArrayAccess {
        return array_key_exists($offset, $cache);
     }
  
-    public function offsetGet(mixed $offset): mixed { 
+    public function offsetGet($offset) { 
        if (!$this->backing->offsetExists($this->key))
           return null;
  
@@ -103,7 +103,7 @@ class SubCache implements ArrayAccess {
        return $cache[$offset];
     }
  
-    public function offsetSet(mixed $offset, mixed $value): void { 
+    public function offsetSet($offset, $value) { 
        $cache = [];
        if ($this->backing->offsetExists($this->key))
           $cache = $this->backing->offsetGet($this->key);
@@ -112,7 +112,7 @@ class SubCache implements ArrayAccess {
        $this->backing->offsetSet($this->key, $cache);
     }
  
-    public function offsetUnset(mixed $offset): void {
+    public function offsetUnset($offset) {
        if (!$this->backing->offsetExists($this->key))
           return;
  
